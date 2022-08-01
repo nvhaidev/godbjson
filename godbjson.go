@@ -9,20 +9,22 @@ import (
 	"reflect"
 )
 
-var _filename = ""
+type Config struct {
+	_filename string
+}
 
 type DataArray struct {
 	Value []interface{}
 }
 
-func setFilename(filename string) {
-	_filename = filename
+func NewDB(filename string) *Config {
+	return &Config{_filename: filename}
 }
-func uid() string {
+func Uid() string {
 	id := uuid.New()
 	return id.String()
 }
-func readFile(filename string) []interface{} {
+func ReadFile(filename string) []interface{} {
 	jsonFile, _ := os.Open(filename)
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
@@ -35,36 +37,36 @@ func readFile(filename string) []interface{} {
 	return data.Value
 }
 
-func write(filename string, data []interface{}) {
+func Write(filename string, data []interface{}) {
 	jsonData, _ := json.Marshal(data)
 	err := ioutil.WriteFile(filename, jsonData, 0644)
 	if err != nil {
 		return
 	}
 }
-func getData() []interface{} {
-	data := readFile(_filename)
+func (c *Config) GetData() []interface{} {
+	data := ReadFile(c._filename)
 	if data == nil {
 		return nil
 	}
 
 	return data
 }
-func setData(data interface{}) {
-	content := getData()
+func (c *Config) SetData(data interface{}) {
+	content := c.GetData()
 	if content == nil {
 		content = []interface{}{}
 	}
 	content = append(content, data)
-	write(_filename, content)
+	Write(c._filename, content)
 }
-func create(data map[string]interface{}) interface{} {
-	data["_id"] = uid()
-	setData(data)
+func (c *Config) Create(data map[string]interface{}) interface{} {
+	data["_id"] = Uid()
+	c.SetData(data)
 	return data
 }
-func findById(id string) interface{} {
-	data := getData()
+func (c *Config) FindById(id string) interface{} {
+	data := c.GetData()
 	if data == nil {
 		return nil
 	}
@@ -75,8 +77,8 @@ func findById(id string) interface{} {
 	}
 	return nil
 }
-func findOne(query map[string]interface{}) interface{} {
-	data := getData()
+func (c *Config) FindOne(query map[string]interface{}) interface{} {
+	data := c.GetData()
 	if data == nil {
 		return nil
 	}
@@ -121,8 +123,8 @@ func findOne(query map[string]interface{}) interface{} {
 
 	return result
 }
-func findAll(query map[string]interface{}) []interface{} {
-	data := getData()
+func (c *Config) FindAll(query map[string]interface{}) []interface{} {
+	data := c.GetData()
 	if data == nil {
 		return nil
 	}
@@ -184,12 +186,12 @@ func findAll(query map[string]interface{}) []interface{} {
 		result = result[:valueLimit]
 	}
 	if valueExclude != nil {
-		result = exclude(result, valueExclude)
+		result = Exclude(result, valueExclude)
 	}
 	return result
 }
-func update(id string, data map[string]interface{}) interface{} {
-	content := getData()
+func (c *Config) Update(id string, data map[string]interface{}) interface{} {
+	content := c.GetData()
 	if content == nil {
 		return nil
 	}
@@ -198,17 +200,17 @@ func update(id string, data map[string]interface{}) interface{} {
 			for k, vv := range data {
 				content[i].(map[string]interface{})[k] = vv
 			}
-			write(_filename, content)
+			Write(c._filename, content)
 			return content[i]
 		}
 	}
 	return nil
 }
-func remove(s []interface{}, i int) []interface{} {
+func Remove(s []interface{}, i int) []interface{} {
 	s[i] = s[len(s)-1]
 	return s[:len(s)-1]
 }
-func exclude(s []interface{}, remote []string) []interface{} {
+func Exclude(s []interface{}, remote []string) []interface{} {
 	if s == nil {
 		return nil
 	}
@@ -223,23 +225,23 @@ func exclude(s []interface{}, remote []string) []interface{} {
 	}
 	return s
 }
-func deleteById(id string) interface{} {
-	content := getData()
+func (c *Config) DeleteById(id string) interface{} {
+	content := c.GetData()
 	if content == nil {
 		return nil
 	}
 	for i, v := range content {
 		if v.(map[string]interface{})["_id"] == id {
-			value := remove(content, i)
-			write(_filename, value)
+			value := Remove(content, i)
+			Write(c._filename, value)
 			return v
 		}
 	}
 	return nil
 }
-func findAllAndCount(query map[string]interface{}) interface{} {
-	content := findAll(query)
-	data := getData()
+func (c *Config) FindAllAndCount(query map[string]interface{}) interface{} {
+	content := c.FindAll(query)
+	data := c.GetData()
 	if data == nil {
 		return nil
 	}
@@ -251,8 +253,8 @@ func findAllAndCount(query map[string]interface{}) interface{} {
 		"count": len(content),
 	}
 }
-func findIndex(query map[string]interface{}) int {
-	content := getData()
+func (c *Config) FindIndex(query map[string]interface{}) int {
+	content := c.GetData()
 	var keyWhere string
 	var valueWhere any
 	if content == nil {
@@ -284,7 +286,7 @@ func findIndex(query map[string]interface{}) int {
 	}
 	return -1
 }
-func getIndex(data []interface{}, index int) interface{} {
+func GetIndex(data []interface{}, index int) interface{} {
 	if data == nil {
 		return nil
 	}
@@ -293,7 +295,7 @@ func getIndex(data []interface{}, index int) interface{} {
 	}
 	return data[index]
 }
-func includes(s []interface{}, e interface{}) bool {
+func Includes(s []interface{}, e interface{}) bool {
 	for _, a := range s {
 		if a == e {
 			return true
@@ -301,7 +303,7 @@ func includes(s []interface{}, e interface{}) bool {
 	}
 	return false
 }
-func filter(s []interface{}, f func(interface{}) bool) []interface{} {
+func Filter(s []interface{}, f func(interface{}) bool) []interface{} {
 	var r []interface{}
 	for _, e := range s {
 		if f(e) {
