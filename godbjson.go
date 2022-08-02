@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 	"io/ioutil"
 	"os"
-	"reflect"
 )
 
 type Config struct {
@@ -34,12 +33,19 @@ func ReadFile(filename string) []interface{} {
 	if err != nil {
 		return nil
 	}
+	defer func(jsonFile *os.File) {
+		err := jsonFile.Close()
+		if err != nil {
+			return
+		}
+	}(jsonFile)
 	return data.Value
 }
 
 func Write(filename string, data []interface{}) {
 	jsonData, _ := json.Marshal(data)
 	err := ioutil.WriteFile(filename, jsonData, 0644)
+
 	if err != nil {
 		return
 	}
@@ -274,12 +280,6 @@ func (c *Config) FindIndex(query map[string]interface{}) int {
 		}
 	}
 	for i, v := range content {
-		if reflect.TypeOf(v.(map[string]interface{})[keyWhere]).String() == "float64" {
-			float64ToInt := int(v.(map[string]interface{})[keyWhere].(float64))
-			if float64ToInt == valueWhere {
-				return i
-			}
-		}
 		if v.(map[string]interface{})[keyWhere] == valueWhere {
 			return i
 		}
